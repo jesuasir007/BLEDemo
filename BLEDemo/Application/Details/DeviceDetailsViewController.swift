@@ -52,7 +52,7 @@ class DeviceDetailsViewController: UITableViewController {
 
     /// Updating connection status
     public func updateConnectionStatus() {
-        self.tableView.cellForRow(at: IndexPath(row: 0, section: 1))?.detailTextLabel?.text = self.currentConnection()
+        self.tableView.cellForRow(at: IndexPath(row: 0, section: 1))?.detailTextLabel?.text = self.checkCurrentConnection()
     }
 
     // MARK: - Private methods
@@ -65,7 +65,7 @@ class DeviceDetailsViewController: UITableViewController {
         self.chartView.set(timeIntervals: timeIntervals, rssiValues: rssi)
     }
 
-    private func currentConnection() -> String {
+    private func checkCurrentConnection() -> String {
         return (self.device.isConnected == false) ? DeviceConnectionStatus.disconnected.rawValue : DeviceConnectionStatus.connected.rawValue
     }
 }
@@ -111,7 +111,7 @@ extension DeviceDetailsViewController {
         } else {
             switch indexPath.row {
             case 0:
-                cell.detailTextLabel?.text = self.currentConnection()
+                cell.detailTextLabel?.text = self.checkCurrentConnection()
                 cell.selectionStyle = .none
             default:
                 cell.accessoryType = .disclosureIndicator

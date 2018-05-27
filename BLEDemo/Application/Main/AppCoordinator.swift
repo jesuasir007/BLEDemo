@@ -66,6 +66,12 @@ class AppCoordinator {
         self.navigationController.pushViewController(deviceDetailsViewController, animated: true)
     }
 
+    public func showServicesScreen(for device: Device) {
+        let servicesViewController = ServicesViewController(device: device)
+        servicesViewController.title = "Services"
+        self.navigationController.pushViewController(servicesViewController, animated: true)
+    }
+
     /// Getting 'DevicesViewController' which always in navigation stack
     private func getDevicesViewController() -> DevicesViewController? {
         for controller in self.navigationController.viewControllers {
@@ -86,16 +92,24 @@ class AppCoordinator {
         return nil
     }
 
-    /// Showing error alert
-    private func showError(_ error: Error) {
-        var alertController: UIAlertController!
-        if let error = error as? AppError {
-            switch error {
-            case .bluetoothIsOff:
-                alertController = self.createAlertController(title: error.title, message: error.message, buttonTitle: error.buttonTitle)
-            default:
-                alertController = self.createAlertController()
+    /// Getting 'ServicesViewController' from navigation stack
+    private func getServicesViewController() -> ServicesViewController? {
+        for controller in self.navigationController.viewControllers {
+            if let servicesViewController = controller as? ServicesViewController {
+                return servicesViewController
             }
+        }
+        return nil
+    }
+
+    /// Showing error alert
+    private func showError(_ error: AppError) {
+        var alertController: UIAlertController!
+        switch error {
+        case .bluetoothIsOff, .notConnected:
+            alertController = self.createAlertController(title: error.title, message: error.message, buttonTitle: error.buttonTitle)
+        default:
+            alertController = self.createAlertController()
         }
         self.rootViewController.present(alertController, animated: true, completion: nil)
     }
@@ -105,7 +119,7 @@ class AppCoordinator {
         let alert = UIAlertController(title: title ?? AppError.unknown.title,
                                       message: message ?? AppError.unknown.message,
                                       preferredStyle: UIAlertControllerStyle.alert)
-        alert.addAction(UIAlertAction(title: buttonTitle, style: .default, handler: { _ in
+        alert.addAction(UIAlertAction(title: buttonTitle ?? AppError.unknown.buttonTitle, style: .default, handler: { _ in
             action?()
         }))
         return alert
@@ -139,7 +153,8 @@ extension AppCoordinator: DeviceDetailsViewControllerDelegate {
         case .send:
             break
         case .services:
-            break
+            self.showServicesScreen(for: device)
+            self.bluetoothService.searchServices(for: device)
         }
     }
 }
@@ -148,13 +163,23 @@ extension AppCoordinator: DeviceDetailsViewControllerDelegate {
 
 extension AppCoordinator: BluetoothServiceDelegate {
 
-    func didConnect() {
+    func didDeviceCharacteristicsUpdate() {
+        if let controller = self.getServicesViewController() {
+            controller.updateContent()
+        }
+    }
+
+    func didFail(with error: AppError) {
+        self.showError(error)
+    }
+
+    func didDeviceConnectionUpdate() {
         if let controller = self.getDeviceDetailsViewController() {
             controller.updateConnectionStatus()
         }
     }
 
-    func didDevicesUpdate() {
+    func didDeviceUpdate() {
         self.getDevicesViewController()?.updateContent()
     }
 

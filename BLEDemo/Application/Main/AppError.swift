@@ -14,11 +14,13 @@ enum AppError: Error {
 
     case bluetoothIsOff
     case unknown
+    case notConnected
 
     public var message: String {
         switch self {
         case .bluetoothIsOff: return "Please turn on and try again"
         case .unknown: return "Please try again later!"
+        case .notConnected: return "Please connect to the device and try again"
         }
     }
 
@@ -26,6 +28,7 @@ enum AppError: Error {
         switch self {
         case .bluetoothIsOff: return "Bluetooth is currently powered off."
         case .unknown: return "Oops! Something went wrong!"
+        case .notConnected: return "Not Connected"
         }
     }
 
@@ -33,6 +36,7 @@ enum AppError: Error {
         switch self {
         case .bluetoothIsOff: return "OK"
         case .unknown: return "OK"
+        case .notConnected: return "OK"
         }
     }
 }

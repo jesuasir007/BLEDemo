@@ -17,6 +17,8 @@
 		1162246820B6C35100CDD3D7 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1162246720B6C35100CDD3D7 /* AppCoordinator.swift */; };
 		1162247820B6CEA000CDD3D7 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1162247720B6CEA000CDD3D7 /* Device.swift */; };
 		1C0D78D620BA18A800A85D6B /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0D78D520BA18A800A85D6B /* Enums.swift */; };
+		1C0D78D820BA38D900A85D6B /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0D78D720BA38D900A85D6B /* Service.swift */; };
+		1C0D78DA20BA3E1B00A85D6B /* ServicesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C0D78D920BA3E1B00A85D6B /* ServicesViewController.swift */; };
 		1C26B6A320B8EB1F00CEC65E /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C26B6A220B8EB1F00CEC65E /* AppError.swift */; };
 		1C26B6AB20B91A5100CEC65E /* DeviceDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C26B6AA20B91A5100CEC65E /* DeviceDetailsViewController.swift */; };
 		1C26B6AE20B924F500CEC65E /* RSSIChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C26B6AD20B924F500CEC65E /* RSSIChartView.swift */; };
@@ -37,6 +39,8 @@
 		1162247720B6CEA000CDD3D7 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		1802837CBC9DC50AA334AC8D /* Pods_BLEDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BLEDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C0D78D520BA18A800A85D6B /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
+		1C0D78D720BA38D900A85D6B /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
+		1C0D78D920BA3E1B00A85D6B /* ServicesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesViewController.swift; sourceTree = "<group>"; };
 		1C26B6A220B8EB1F00CEC65E /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		1C26B6AA20B91A5100CEC65E /* DeviceDetailsViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeviceDetailsViewController.swift; sourceTree = "<group>"; };
 		1C26B6AD20B924F500CEC65E /* RSSIChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSIChartView.swift; sourceTree = "<group>"; };
@@ -123,6 +127,7 @@
 				1162246B20B6C37B00CDD3D7 /* Main */,
 				1162247520B6C86300CDD3D7 /* Devices */,
 				1C26B6A920B91A5100CEC65E /* Details */,
+				1C0D78DB20BA3E2000A85D6B /* Services & Characteristics */,
 				1114495B20B7F69A00DB578A /* Services */,
 			);
 			path = Application;
@@ -146,6 +151,14 @@
 			path = Devices;
 			sourceTree = "<group>";
 		};
+		1C0D78DB20BA3E2000A85D6B /* Services & Characteristics */ = {
+			isa = PBXGroup;
+			children = (
+				1C0D78D920BA3E1B00A85D6B /* ServicesViewController.swift */,
+			);
+			path = "Services & Characteristics";
+			sourceTree = "<group>";
+		};
 		1C26B6A920B91A5100CEC65E /* Details */ = {
 			isa = PBXGroup;
 			children = (
@@ -159,6 +172,7 @@
 			isa = PBXGroup;
 			children = (
 				1162247720B6CEA000CDD3D7 /* Device.swift */,
+				1C0D78D720BA38D900A85D6B /* Service.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -303,8 +317,10 @@
 				1114495A20B7F67300DB578A /* BluetoothService.swift in Sources */,
 				1162246820B6C35100CDD3D7 /* AppCoordinator.swift in Sources */,
 				1C26B6A320B8EB1F00CEC65E /* AppError.swift in Sources */,
+				1C0D78DA20BA3E1B00A85D6B /* ServicesViewController.swift in Sources */,
 				1C26B6AE20B924F500CEC65E /* RSSIChartView.swift in Sources */,
 				1162245820B6C33000CDD3D7 /* DevicesViewController.swift in Sources */,
+				1C0D78D820BA38D900A85D6B /* Service.swift in Sources */,
 				1CBB3C9D20B96B9E009A1E4C /* Extensions.swift in Sources */,
 				1162245620B6C33000CDD3D7 /* AppDelegate.swift in Sources */,
 				1C26B6AB20B91A5100CEC65E /* DeviceDetailsViewController.swift in Sources */,

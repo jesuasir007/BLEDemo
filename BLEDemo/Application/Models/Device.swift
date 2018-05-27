@@ -14,14 +14,15 @@ class Device: Equatable {
         return lhs.name == rhs.name
     }
 
-    var name: String
-    var rssiValues: [(date: Date, rssi: Double)] = []
-    var isConnected: Bool = false
-    var id: String
+    public var name: String
+    public var rssiValues: [(date: Date, rssi: Double)] = []
+    public var isConnected: Bool = false
+    public var uuid: String
+    public var services: [Service] = []
     
-    public init(id: String, name: String) {
+    public init(uuid: String, name: String) {
         self.name = name
-        self.id = id
+        self.uuid = uuid
     }
     
     /// Adding RSSI value with timestamp

@@ -15,10 +15,16 @@ protocol BluetoothServiceDelegate: class {
     func didPowerStateUpdate(isPowerOn: Bool)
 
     /// Called when eather new device has been discovered or rssi value of the existing has been updated
-    func didDevicesUpdate()
+    func didDeviceUpdate()
 
-    // Called when 'CBCentralManager' connects or disconnects from the device
-    func didConnect()
+    /// Called when 'CBCentralManager' connects or disconnects from the device
+    func didDeviceConnectionUpdate()
+
+    /// Called when all characteristics of the device have been discovered
+    func didDeviceCharacteristicsUpdate()
+
+    /// Called when selected API's failed
+    func didFail(with error: AppError)
 }
 
 class BluetoothService: NSObject {
@@ -83,8 +89,27 @@ class BluetoothService: NSObject {
     }
 
     public func connect(to device: Device) {
-        if let peripheralDevice =  self.matchDevice(device) {
+        if let peripheralDevice = self.matchDevice(device) {
             self.centralManager.connect(peripheralDevice)
+        }
+    }
+
+    /// Sending data to the device
+//    public func send(data: Any, to device: Device) {
+//        if let peripheralDevice =  self.matchDevice(device) {
+//
+//        }
+//    }
+
+    /// Start searching services for the device
+    public func searchServices(for device: Device) {
+        if device.isConnected {
+            if let peripheralDevice = self.matchDevice(device) {
+                peripheralDevice.delegate = self
+                peripheralDevice.discoverServices(nil)
+            }
+        } else {
+            self.delegate?.didFail(with: .notConnected)
         }
     }
 
@@ -99,7 +124,7 @@ class BluetoothService: NSObject {
 
     /// Matching device with peripheral by uuid
     private func matchDevice(_ device: Device) -> CBPeripheral? {
-        if let peripheralDevice = (self.peripheralDevices.filter { $0.identifier.uuidString == device.id }).first {
+        if let peripheralDevice = (self.peripheralDevices.filter { $0.identifier.uuidString == device.uuid }).first {
             return peripheralDevice
         }
         return nil
@@ -107,8 +132,16 @@ class BluetoothService: NSObject {
 
     /// Matching peripheral with device by uuid
     private func matchPeripheral(_ peripheral: CBPeripheral) -> Device? {
-        if let device = (self.devices.filter { $0.id == peripheral.identifier.uuidString }).first {
+        if let device = (self.devices.filter { $0.uuid == peripheral.identifier.uuidString }).first {
             return device
+        }
+        return nil
+    }
+
+    private func matchService(_ service: CBService, for device: Device) -> Service? {
+        let services = device.services
+        if let service = (services.filter { $0.uuid == service.uuid.uuidString }).first {
+            return service
         }
         return nil
     }
@@ -123,10 +156,10 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        debugPrint("[CONNECT]: - \(peripheral.name!)")
+        debugPrint("[Connect]: - \(peripheral.name!)")
         if let device = self.matchPeripheral(peripheral) {
             device.isConnected = true
-            self.delegate?.didConnect()
+            self.delegate?.didDeviceConnectionUpdate()
         }
     }
 
@@ -134,15 +167,40 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
         debugPrint("[Disconnect]: - \(peripheral.name!)")
         if let device = self.matchPeripheral(peripheral) {
             device.isConnected = false
-            self.delegate?.didConnect()
+            self.delegate?.didDeviceConnectionUpdate()
         }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        guard let device = self.matchPeripheral(peripheral) else { return }
+
+        for service in services {
+            debugPrint("[Service]: - \(service)")
+            let deviceService = Service(uuid: service.uuid.uuidString)
+            device.services.append(deviceService)
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let characteristics = service.characteristics else { return }
+        guard let device = self.matchPeripheral(peripheral) else { return }
+        guard let deviceService = self.matchService(service, for: device) else { return }
+
+        for characteristic in characteristics {
+            debugPrint("[Characteristics]: - \(service)")
+            let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString)
+            deviceService.characteristic.append(deviceCharacteristic)
+        }
+        self.delegate?.didDeviceCharacteristicsUpdate()
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         
         // Retrieve the peripheral name from the advertisement data using the "kCBAdvDataLocalName" key
         if let peripheralName = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
-            debugPrint("[Peripheral Device] - \(peripheralName)")
+            debugPrint("[Peripheral Device]: - \(peripheralName)")
 
             // If device already created we just add new RSSI value and timestamp
             if let existingDevice = self.devices.filter({ $0.name == peripheralName }).first {
@@ -152,14 +210,14 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
                     existingDevice.add(RSSI)
                     self.shouldSaveNewRSSI = false
                     self.startRefresher()
-                    self.delegate?.didDevicesUpdate()
+                    self.delegate?.didDeviceUpdate()
                 }
             } else {
                 // Creating new peripheral devices and adding it to collection of discovered devices
-                let device = Device(id: peripheral.identifier.uuidString, name: peripheralName)
+                let device = Device(uuid: peripheral.identifier.uuidString, name: peripheralName)
                 device.add(RSSI)
                 self.devices.append(device)
-                self.delegate?.didDevicesUpdate()
+                self.delegate?.didDeviceUpdate()
 
                 self.peripheralDevices.append(peripheral)
             }

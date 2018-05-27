@@ -23,7 +23,6 @@ class DevicesViewController: UITableViewController {
     private var devices: [Device] = []
     private let bluetoothService: BluetoothService
 
-    /// Updates table view with new data every 1 seconds
     private var loadingIndicator: UIActivityIndicatorView?
     
     // MARK: - Init
@@ -76,7 +75,7 @@ class DevicesViewController: UITableViewController {
 
     // MARK: - Private methods
 
-    /// Configuring oading indicator
+    /// Configuring loading indicator
     private func configureLoadingIndicator() {
         self.loadingIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
         self.loadingIndicator?.hidesWhenStopped = true
