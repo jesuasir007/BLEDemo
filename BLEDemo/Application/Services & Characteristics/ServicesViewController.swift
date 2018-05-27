@@ -9,12 +9,19 @@
 import Foundation
 import UIKit
 
+protocol ServicesViewControllerDelegate: class {
+
+    /// Called when user selects characteristic from the list without responce
+    func didSend(data: Data, to device: Device, characteristic: Characteristic)
+}
+
 class ServicesViewController: UITableViewController {
     
     // MARK: - Properties
 
     private let device: Device
     private var loadingIndicator: UIActivityIndicatorView?
+    public weak var delegate: ServicesViewControllerDelegate?
 
     // MARK: - Init
 
@@ -53,6 +60,16 @@ class ServicesViewController: UITableViewController {
         self.loadingIndicator?.hidesWhenStopped = true
         self.loadingIndicator?.startAnimating()
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: loadingIndicator!)
+    }
+}
+
+// MARK: - UITableViewDataSource
+
+extension ServicesViewController {
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let characteristic = self.device.services[indexPath.section].characteristic[indexPath.row]
+        self.delegate?.didSend(data: Constants.testData, to: self.device, characteristic: characteristic)
     }
 }
 

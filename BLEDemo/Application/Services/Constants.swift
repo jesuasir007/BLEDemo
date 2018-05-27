@@ -16,8 +16,9 @@ public struct Constants {
     static let chartEmptyDataText = "No data to display"
     static let averageRSSIText = "Average RSSI: "
     static let numberOfLastRSSIValuesToDisplay = 15
-    static let cellsButtonText: [String] = ["Connect", "Send", "Services & Characteristics"]
+    static let cellsButtonText: [String] = ["Connect", "Services & Characteristics"]
     static let cellIdentifier = "Cell"
+    static let testData: Data = Data()
 
     static let testTimeIntervals = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
     static let testRSSIValues = [-30.0, -34.0, -56.0, -35.0, -34.0, -32.0, -56.0, -67.0, -34.0, -45.0, -54.0]

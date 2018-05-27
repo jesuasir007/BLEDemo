@@ -22,9 +22,6 @@ protocol BluetoothServiceDelegate: class {
 
     /// Called when all characteristics of the device have been discovered
     func didDeviceCharacteristicsUpdate()
-
-    /// Called when selected API's failed
-    func didFail(with error: AppError)
 }
 
 class BluetoothService: NSObject {
@@ -36,6 +33,9 @@ class BluetoothService: NSObject {
 
     /// Keep track on 'CBPeripheral' allows us to ineract with that device
     private var peripheralDevices: [CBPeripheral] = []
+
+    /// Keep track on 'CBCharacteristic' allows us to send data to that device without responce
+    private var peripheralCharacteristic: [CBCharacteristic] = []
 
     /// Help identify whether we need to save new value
     private var shouldSaveNewRSSI: Bool = true
@@ -55,10 +55,7 @@ class BluetoothService: NSObject {
     
     /// Start scanning for peripherals
     public func startScanning() {
-
-        guard self.isPowerOn() else {
-            return
-        }
+        guard self.isPowerOn() else { return }
 
         /// Start scanning for peripheral devices
         self.centralManager.scanForPeripherals(withServices: nil, options: nil)
@@ -66,9 +63,7 @@ class BluetoothService: NSObject {
     
     /// Stop scanning for peripherals
     public func stopScanning() {
-        guard self.isPowerOn() else {
-            return
-        }
+        guard self.isPowerOn() else { return }
 
         self.centralManager.stopScan()
     }
@@ -89,27 +84,31 @@ class BluetoothService: NSObject {
     }
 
     public func connect(to device: Device) {
+        guard self.isPowerOn() else { return }
+
         if let peripheralDevice = self.matchDevice(device) {
             self.centralManager.connect(peripheralDevice)
         }
     }
 
-    /// Sending data to the device
-//    public func send(data: Any, to device: Device) {
-//        if let peripheralDevice =  self.matchDevice(device) {
-//
-//        }
-//    }
+    /// Sending data to the device without response
+    public func send(data: Data, to device: Device, characteristic: Characteristic) {
+        guard self.isPowerOn() else { return }
+
+        guard let peripheralDevice =  self.matchDevice(device),
+            let peripheralCharacteristic = self.matchCharacteristic(characteristic, for: device) else {
+            return
+        }
+        peripheralDevice.writeValue(data, for: peripheralCharacteristic, type: .withoutResponse)
+    }
 
     /// Start searching services for the device
     public func searchServices(for device: Device) {
-        if device.isConnected {
-            if let peripheralDevice = self.matchDevice(device) {
-                peripheralDevice.delegate = self
-                peripheralDevice.discoverServices(nil)
-            }
-        } else {
-            self.delegate?.didFail(with: .notConnected)
+        guard self.isPowerOn() else { return }
+
+        if let peripheralDevice = self.matchDevice(device) {
+            peripheralDevice.delegate = self
+            peripheralDevice.discoverServices(nil)
         }
     }
 
@@ -122,7 +121,7 @@ class BluetoothService: NSObject {
         })
     }
 
-    /// Matching device with peripheral by uuid
+    /// Matching 'Device' with 'CBPeripheral' by uuid
     private func matchDevice(_ device: Device) -> CBPeripheral? {
         if let peripheralDevice = (self.peripheralDevices.filter { $0.identifier.uuidString == device.uuid }).first {
             return peripheralDevice
@@ -130,7 +129,7 @@ class BluetoothService: NSObject {
         return nil
     }
 
-    /// Matching peripheral with device by uuid
+    /// Matching 'CBPeripheral' with 'Device' by uuid
     private func matchPeripheral(_ peripheral: CBPeripheral) -> Device? {
         if let device = (self.devices.filter { $0.uuid == peripheral.identifier.uuidString }).first {
             return device
@@ -138,10 +137,19 @@ class BluetoothService: NSObject {
         return nil
     }
 
+    /// Matching 'CBService' with 'Service' of the device by uuid
     private func matchService(_ service: CBService, for device: Device) -> Service? {
         let services = device.services
         if let service = (services.filter { $0.uuid == service.uuid.uuidString }).first {
             return service
+        }
+        return nil
+    }
+
+    /// Matching 'Characteristic' with 'CBCharacteristic' of the device by uuid
+    private func matchCharacteristic(_ characteristic: Characteristic, for device: Device) -> CBCharacteristic? {
+        if let characteristic = (self.peripheralCharacteristic.filter { $0.uuid.uuidString == characteristic.uuid }).first {
+            return characteristic
         }
         return nil
     }
@@ -192,6 +200,7 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
             debugPrint("[Characteristics]: - \(service)")
             let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString)
             deviceService.characteristic.append(deviceCharacteristic)
+            self.peripheralCharacteristic.append(characteristic)
         }
         self.delegate?.didDeviceCharacteristicsUpdate()
     }

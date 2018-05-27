@@ -10,7 +10,6 @@ import Foundation
 
 enum DeviceInteraction: Int {
     case connect
-    case send
     case services
 
     static func identifyInteraction(for selectedRow: Int) -> DeviceInteraction? {
@@ -18,8 +17,6 @@ enum DeviceInteraction: Int {
         case 0:
             return .connect
         case 1:
-            return .send
-        case 2:
             return .services
         default:
             return nil
