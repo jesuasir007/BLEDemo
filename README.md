@@ -2,7 +2,7 @@
 
 ### Description
 
-Demo project based **CoreBluetooth** Main functionality:
+Demo project based on **CoreBluetooth** framework and **App Coordinators**. Main functionality:
 1. Searhing for peripheral devices
 2. Connecting to the discovered devices
 3. Reqesting device services and characteristics
