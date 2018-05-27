@@ -41,7 +41,7 @@ class BluetoothService: NSObject {
     private var shouldSaveNewRSSI: Bool = true
 
     /// Define time interval for saving new RSSI values, default is 5.0 sec
-    public var refreshInterval: TimeInterval = 5.0
+    public var refreshInterval: TimeInterval = 3.0
     public weak var delegate: BluetoothServiceDelegate?
     
     // MARK: - Init
