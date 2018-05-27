@@ -86,7 +86,7 @@ extension ServicesViewController {
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return self.device.services[section].uuid
+        return self.device.services[section].uuid.serviceName()
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {

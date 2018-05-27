@@ -94,6 +94,7 @@ class BluetoothService: NSObject {
     /// Sending data to the device without response
     public func send(data: Data, to device: Device, characteristic: Characteristic) {
         guard self.isPowerOn() else { return }
+        guard device.isConnected else { return }
 
         guard let peripheralDevice =  self.matchDevice(device),
             let peripheralCharacteristic = self.matchCharacteristic(characteristic, for: device) else {
@@ -105,6 +106,9 @@ class BluetoothService: NSObject {
     /// Start searching services for the device
     public func searchServices(for device: Device) {
         guard self.isPowerOn() else { return }
+
+        // We don't want to fetch services again if they have been already fetched
+        guard device.services.isEmpty else { return }
 
         if let peripheralDevice = self.matchDevice(device) {
             peripheralDevice.delegate = self
