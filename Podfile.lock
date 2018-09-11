@@ -6,9 +6,13 @@ PODS:
 DEPENDENCIES:
   - Charts
 
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - Charts
+
 SPEC CHECKSUMS:
   Charts: 90a4d61da0f6e06684c591e3bcab11940fe61736
 
 PODFILE CHECKSUM: 9a0fe489b403647189b38d384d878f8b560feac7
 
-COCOAPODS: 1.4.0
+COCOAPODS: 1.5.3

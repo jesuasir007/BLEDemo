@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import CoreBluetooth
 
 class Device: Equatable {
     
@@ -19,10 +20,12 @@ class Device: Equatable {
     public var isConnected: Bool = false
     public var uuid: String
     public var services: [Service] = []
+    public var peripheral: CBPeripheral
     
-    public init(uuid: String, name: String) {
+    public init(uuid: String, name: String, peripheral: CBPeripheral) {
         self.name = name
         self.uuid = uuid
+        self.peripheral = peripheral
     }
     
     /// Adding RSSI value with timestamp
@@ -32,5 +35,17 @@ class Device: Equatable {
 
         // Take only pre defined last elements
         self.rssiValues = Array(self.rssiValues.suffix(Constants.numberOfLastRSSIValuesToDisplay))
+    }
+    
+    /// Start vibrating with certain level
+    public func vibrate(level: UInt8) {
+        
+        // Searching for alert characteristic
+        if let alertCharacteristic = self.services.first(where: { $0.uuid == MiServiceID.alert })?.characteristic.first(where: { $0.uuid == MiCharacteristicID.alert }) {
+            
+            /** Writing to the device command without responce at higher speed
+             */
+            self.peripheral.writeValue(Data(bytes: [level]), for: alertCharacteristic.characteristic, type: .withoutResponse)
+        }
     }
 }

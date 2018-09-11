@@ -68,7 +68,6 @@ class AppCoordinator {
 
     public func showServicesScreen(for device: Device) {
         let servicesViewController = ServicesViewController(device: device)
-        servicesViewController.delegate = self
         servicesViewController.title = "Services"
         self.navigationController.pushViewController(servicesViewController, animated: true)
     }
@@ -154,30 +153,22 @@ extension AppCoordinator: DeviceDetailsViewControllerDelegate {
         case .services:
             if device.isConnected {
                 self.showServicesScreen(for: device)
-                self.bluetoothService.searchServices(for: device)
             } else {
                 self.showError(.notConnected)
             }
+        case .stepsCount:
+            break
         }
-    }
-}
-
-// MARK: - ServicesViewControllerDelegate
-
-extension AppCoordinator: ServicesViewControllerDelegate {
-
-    func didSend(data: Data, to device: Device, characteristic: Characteristic) {
-        self.bluetoothService.send(data: data, to: device, characteristic: characteristic)
     }
 }
 
 // MARK: - BluetoothServiceDelegate
 
 extension AppCoordinator: BluetoothServiceDelegate {
-
-    func didDeviceCharacteristicsUpdate() {
-        if let controller = self.getServicesViewController() {
-            controller.updateContent()
+    
+    func didStepsUpdate(steps: Int) {
+        if let controller = self.getDeviceDetailsViewController() {
+            controller.updateStepsCount(steps)
         }
     }
 

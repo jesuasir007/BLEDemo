@@ -9,7 +9,21 @@
 import Foundation
 
 extension String {
-
+    
+    /// Getting GATT characteristic name
+    func characteristicName() -> String {
+        switch self {
+        case "2A37":
+            return "Heart Rate Measurement"
+        case "2A39":
+            return "Heart Rate Control Point"
+        case "2A06":
+            return "Alert Level"
+        default:
+            return self
+        }
+    }
+    
     /// Getting GATT service name
     func serviceName() -> String {
         switch self {
@@ -94,6 +108,25 @@ extension String {
         default:
             return self
         }
+    }
+}
+
+extension Data {
+    
+    func chunkedHexEncodedString() -> String {
+        let bytes = self.bytes()
+        let chunkSize = 4
+        return stride(from: 0, to: bytes.count, by: chunkSize)
+            .map {
+                Array(bytes[$0..<Swift.min($0 + chunkSize, bytes.count)])
+                    .map { String(format: "%02hhx", $0) }
+                    .joined()
+            }
+            .joined(separator: " ")
+    }
+    
+    func bytes() -> [UInt8] {
+        return self.map({ $0 })
     }
 }
 

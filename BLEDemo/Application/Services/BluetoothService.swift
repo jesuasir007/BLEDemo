@@ -19,9 +19,9 @@ protocol BluetoothServiceDelegate: class {
 
     /// Called when 'CBCentralManager' connects or disconnects from the device
     func didDeviceConnectionUpdate()
-
-    /// Called when all characteristics of the device have been discovered
-    func didDeviceCharacteristicsUpdate()
+    
+    /// Called when steps changed
+    func didStepsUpdate(steps: Int)
 }
 
 class BluetoothService: NSObject {
@@ -31,24 +31,17 @@ class BluetoothService: NSObject {
     private var centralManager: CBCentralManager!
     private var devices: [Device] = []
 
-    /// Keep track on 'CBPeripheral' allows us to ineract with that device
-    private var peripheralDevices: [CBPeripheral] = []
-
-    /// Keep track on 'CBCharacteristic' allows us to send data to that device without responce
-    private var peripheralCharacteristic: [CBCharacteristic] = []
-
-    /// Help identify whether we need to save new value
-    private var shouldSaveNewRSSI: Bool = true
-
-    /// Define time interval for saving new RSSI values, default is 5.0 sec
-    public var refreshInterval: TimeInterval = 3.0
     public weak var delegate: BluetoothServiceDelegate?
     
     // MARK: - Init
     
     public override init() {
         super.init()
-        self.centralManager = CBCentralManager(delegate: self, queue: nil)
+        
+        /** Best Practice
+            Perform Bluetooth tasks on background queue */
+        let backgroundQueue = DispatchQueue.global(qos: .background)
+        self.centralManager = CBCentralManager(delegate: self, queue: backgroundQueue)
     }
     
     // MARK: - Public methods
@@ -57,7 +50,10 @@ class BluetoothService: NSObject {
     public func startScanning() {
         guard self.isPowerOn() else { return }
 
-        /// Start scanning for peripheral devices
+        /** Best Practice
+            Scanning only for specific peripherals */
+        
+        /** Services could be specified for faster search */
         self.centralManager.scanForPeripherals(withServices: nil, options: nil)
     }
     
@@ -65,6 +61,8 @@ class BluetoothService: NSObject {
     public func stopScanning() {
         guard self.isPowerOn() else { return }
 
+        /** Best Practice
+            Stop scanning when we don't need to */
         self.centralManager.stopScan()
     }
     
@@ -86,76 +84,19 @@ class BluetoothService: NSObject {
     public func connect(to device: Device) {
         guard self.isPowerOn() else { return }
 
-        if let peripheralDevice = self.matchDevice(device) {
-            self.centralManager.connect(peripheralDevice)
-        }
-    }
-
-    /// Sending data to the device without response
-    public func send(data: Data, to device: Device, characteristic: Characteristic) {
-        guard self.isPowerOn() else { return }
-        guard device.isConnected else { return }
-
-        guard let peripheralDevice =  self.matchDevice(device),
-            let peripheralCharacteristic = self.matchCharacteristic(characteristic, for: device) else {
-            return
-        }
-        peripheralDevice.writeValue(data, for: peripheralCharacteristic, type: .withoutResponse)
-    }
-
-    /// Start searching services for the device
-    public func searchServices(for device: Device) {
-        guard self.isPowerOn() else { return }
-
-        // We don't want to fetch services again if they have been already fetched
-        guard device.services.isEmpty else { return }
-
-        if let peripheralDevice = self.matchDevice(device) {
-            peripheralDevice.delegate = self
-            peripheralDevice.discoverServices(nil)
-        }
+        self.centralManager.connect(device.peripheral)
     }
 
     // MARK: - Private methods
 
-    /// Start refreshing timer that updates 'shouldSaveNewRSSI' which saves RSSI values with defined time interval
-    private func startRefresher() {
-        Timer.scheduledTimer(withTimeInterval: self.refreshInterval, repeats: false, block: { timer in
-            self.shouldSaveNewRSSI = true
-        })
-    }
-
-    /// Matching 'Device' with 'CBPeripheral' by uuid
-    private func matchDevice(_ device: Device) -> CBPeripheral? {
-        if let peripheralDevice = (self.peripheralDevices.filter { $0.identifier.uuidString == device.uuid }).first {
-            return peripheralDevice
-        }
-        return nil
-    }
-
     /// Matching 'CBPeripheral' with 'Device' by uuid
     private func matchPeripheral(_ peripheral: CBPeripheral) -> Device? {
-        if let device = (self.devices.filter { $0.uuid == peripheral.identifier.uuidString }).first {
-            return device
-        }
-        return nil
+        return self.devices.first(where: { $0.peripheral == peripheral })
     }
 
     /// Matching 'CBService' with 'Service' of the device by uuid
     private func matchService(_ service: CBService, for device: Device) -> Service? {
-        let services = device.services
-        if let service = (services.filter { $0.uuid == service.uuid.uuidString }).first {
-            return service
-        }
-        return nil
-    }
-
-    /// Matching 'Characteristic' with 'CBCharacteristic' of the device by uuid
-    private func matchCharacteristic(_ characteristic: Characteristic, for device: Device) -> CBCharacteristic? {
-        if let characteristic = (self.peripheralCharacteristic.filter { $0.uuid.uuidString == characteristic.uuid }).first {
-            return characteristic
-        }
-        return nil
+        return device.services.first(where: { $0.service == service })
     }
 }
 
@@ -164,14 +105,22 @@ class BluetoothService: NSObject {
 extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        self.delegate?.didPowerStateUpdate(isPowerOn: central.state == .poweredOn)
+        
+        DispatchQueue.main.async {
+            self.delegate?.didPowerStateUpdate(isPowerOn: central.state == .poweredOn)
+        }
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         debugPrint("[Connect]: - \(peripheral.name!)")
         if let device = self.matchPeripheral(peripheral) {
             device.isConnected = true
-            self.delegate?.didDeviceConnectionUpdate()
+            device.peripheral.delegate = self
+            device.peripheral.discoverServices(nil)
+            
+            DispatchQueue.main.async {
+                self.delegate?.didDeviceConnectionUpdate()
+            }
         }
     }
 
@@ -179,7 +128,10 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
         debugPrint("[Disconnect]: - \(peripheral.name!)")
         if let device = self.matchPeripheral(peripheral) {
             device.isConnected = false
-            self.delegate?.didDeviceConnectionUpdate()
+            
+            DispatchQueue.main.async {
+                self.delegate?.didDeviceConnectionUpdate()
+            }
         }
     }
 
@@ -189,8 +141,10 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
 
         for service in services {
             debugPrint("[Service]: - \(service)")
-            let deviceService = Service(uuid: service.uuid.uuidString)
+            let deviceService = Service(uuid: service.uuid.uuidString, service: service)
             device.services.append(deviceService)
+            
+            /** Characteristics could be specified for faster search */
             peripheral.discoverCharacteristics(nil, for: service)
         }
     }
@@ -202,14 +156,38 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
 
         for characteristic in characteristics {
             debugPrint("[Characteristics]: - \(service)")
-            let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString)
+            let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString,
+                                                      characteristic: characteristic)
             deviceService.characteristic.append(deviceCharacteristic)
-            self.peripheralCharacteristic.append(characteristic)
+            
+            if characteristic.uuid.uuidString == MiCharacteristicID.steps {
+                /** We can read its value and/or register for notifications,
+                 *  which will be sent every time this value changes.
+                 */
+                peripheral.setNotifyValue(true, for: characteristic)
+//                peripheral.readValue(for: characteristic)
+            }
         }
-        self.delegate?.didDeviceCharacteristicsUpdate()
     }
     
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard let value = characteristic.value else { return }
+        
+        // Characteristic for total steps count
+        if characteristic.uuid.uuidString == MiCharacteristicID.steps {
+            let steps = (value as NSData).bytes.bindMemory(to: Int.self, capacity: characteristic.value!.count).pointee
+            
+            DispatchQueue.main.async {
+                debugPrint("[Steps Count]: - steps \(steps)")
+                self.delegate?.didStepsUpdate(steps: steps)
+            }
+        }
+    }
+    
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
+        
+        /** Received Signal Strength Indicator (RSSI)
+            is a measurement of the power present in a received radio signal */
         
         // Retrieve the peripheral name from the advertisement data using the "kCBAdvDataLocalName" key
         if let peripheralName = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
@@ -217,22 +195,20 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
 
             // If device already created we just add new RSSI value and timestamp
             if let existingDevice = self.devices.filter({ $0.name == peripheralName }).first {
-
-                // Check if we need to save new RSSI value
-                if self.shouldSaveNewRSSI {
-                    existingDevice.add(RSSI)
-                    self.shouldSaveNewRSSI = false
-                    self.startRefresher()
-                    self.delegate?.didDeviceUpdate()
-                }
+                
+                // Adding RSSI value to existing device
+                existingDevice.add(RSSI)
             } else {
                 // Creating new peripheral devices and adding it to collection of discovered devices
-                let device = Device(uuid: peripheral.identifier.uuidString, name: peripheralName)
+                let device = Device(uuid: peripheral.identifier.uuidString,
+                                    name: peripheralName,
+                                    peripheral: peripheral)
                 device.add(RSSI)
                 self.devices.append(device)
+            }
+            
+            DispatchQueue.main.async {
                 self.delegate?.didDeviceUpdate()
-
-                self.peripheralDevices.append(peripheral)
             }
         }
     }

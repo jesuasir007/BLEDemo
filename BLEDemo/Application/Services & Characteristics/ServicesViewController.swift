@@ -9,19 +9,11 @@
 import Foundation
 import UIKit
 
-protocol ServicesViewControllerDelegate: class {
-
-    /// Called when user selects characteristic from the list without responce
-    func didSend(data: Data, to device: Device, characteristic: Characteristic)
-}
-
 class ServicesViewController: UITableViewController {
     
     // MARK: - Properties
 
     private let device: Device
-    private var loadingIndicator: UIActivityIndicatorView?
-    public weak var delegate: ServicesViewControllerDelegate?
 
     // MARK: - Init
 
@@ -41,7 +33,6 @@ class ServicesViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.tableView.tableFooterView = UIView()
-        self.configureLoadingIndicator()
     }
 
     // MARK: - Public methods
@@ -49,17 +40,6 @@ class ServicesViewController: UITableViewController {
     /// Updating all content
     public func updateContent() {
         self.tableView.reloadData()
-        self.loadingIndicator?.stopAnimating()
-    }
-
-    // MARK: - Private methods
-
-    /// Configuring loading indicator
-    private func configureLoadingIndicator() {
-        self.loadingIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
-        self.loadingIndicator?.hidesWhenStopped = true
-        self.loadingIndicator?.startAnimating()
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: loadingIndicator!)
     }
 }
 
@@ -69,7 +49,9 @@ extension ServicesViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let characteristic = self.device.services[indexPath.section].characteristic[indexPath.row]
-        self.delegate?.didSend(data: Constants.testData, to: self.device, characteristic: characteristic)
+        if characteristic.uuid == MiCharacteristicID.alert {
+            self.device.vibrate(level: AlertMode.mild)
+        }
     }
 }
 
@@ -97,7 +79,7 @@ extension ServicesViewController {
             return cell
         }()
 
-        cell.textLabel?.text = self.device.services[indexPath.section].characteristic[indexPath.row].uuid
+        cell.textLabel?.text = self.device.services[indexPath.section].characteristic[indexPath.row].uuid.characteristicName()
         return cell
     }
 }

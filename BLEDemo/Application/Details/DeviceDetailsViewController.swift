@@ -54,6 +54,11 @@ class DeviceDetailsViewController: UITableViewController {
     public func updateConnectionStatus() {
         self.tableView.cellForRow(at: IndexPath(row: 0, section: 1))?.detailTextLabel?.text = self.checkCurrentConnection()
     }
+    
+    /// Updating steps count
+    public func updateStepsCount(_ steps: Int) {
+        self.tableView.cellForRow(at: IndexPath(row: 2, section: 1))?.detailTextLabel?.text = "\(steps)"
+    }
 
     // MARK: - Private methods
 
@@ -112,6 +117,9 @@ extension DeviceDetailsViewController {
             switch indexPath.row {
             case 0:
                 cell.detailTextLabel?.text = self.checkCurrentConnection()
+                cell.selectionStyle = .none    
+            case 2:
+                cell.detailTextLabel?.text = "--"
                 cell.selectionStyle = .none
             default:
                 cell.accessoryType = .disclosureIndicator

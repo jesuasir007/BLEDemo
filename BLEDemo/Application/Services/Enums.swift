@@ -11,6 +11,7 @@ import Foundation
 enum DeviceInteraction: Int {
     case connect
     case services
+    case stepsCount
 
     static func identifyInteraction(for selectedRow: Int) -> DeviceInteraction? {
         switch selectedRow {
@@ -18,6 +19,8 @@ enum DeviceInteraction: Int {
             return .connect
         case 1:
             return .services
+        case 2:
+            return .stepsCount
         default:
             return nil
         }
