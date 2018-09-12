@@ -25,15 +25,17 @@ public struct Constants {
     static let testRSSIValues = [-30.0, -34.0, -56.0, -35.0, -34.0, -32.0, -56.0, -67.0, -34.0, -45.0, -54.0]
 }
 
+public var Mi_Band_Service: CBUUID = CBUUID(string: "FEE0")
+public var Heart_Rate_Service: CBUUID = CBUUID(string: "180D")
+public var Alert_Service: CBUUID = CBUUID(string: "1802")
+
+public var Alert_Characteristic: CBUUID = CBUUID(string: "2A06")
+public var Steps_Characteristic: CBUUID = CBUUID(string: "FF06")
+
 struct AlertMode {
     static let off: UInt8 = 0x0
     static let mild: UInt8 = 0x1
     static let high: UInt8 = 0x2
-}
-
-struct MiServiceID {
-    static let heartRate = "180D"
-    static let alert = "1802"
 }
 
 enum MiCharacteristicID {

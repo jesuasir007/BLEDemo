@@ -54,7 +54,7 @@ class BluetoothService: NSObject {
             Scanning only for specific peripherals */
         
         /** Services could be specified for faster search */
-        self.centralManager.scanForPeripherals(withServices: nil, options: nil)
+        self.centralManager.scanForPeripherals(withServices: [Mi_Band_Service], options: nil)
     }
     
     /// Stop scanning for peripherals
@@ -145,6 +145,7 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
             device.services.append(deviceService)
             
             /** Characteristics could be specified for faster search */
+//            peripheral.discoverCharacteristics([Alert_Characteristic, Steps_Characteristic], for: service)
             peripheral.discoverCharacteristics(nil, for: service)
         }
     }
