@@ -52,8 +52,6 @@ class BluetoothService: NSObject {
 
         /** Best Practice
             Scanning only for specific peripherals */
-        
-        /** Services could be specified for faster search */
         self.centralManager.scanForPeripherals(withServices: [Mi_Band_Service], options: nil)
     }
     
@@ -100,88 +98,14 @@ class BluetoothService: NSObject {
     }
 }
 
-// MARK: - CBCentralManagerDelegate, CBPeripheralDelegate
+// MARK: - CBCentralManagerDelegate
 
-extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
+extension BluetoothService: CBCentralManagerDelegate {
     
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         
         DispatchQueue.main.async {
             self.delegate?.didPowerStateUpdate(isPowerOn: central.state == .poweredOn)
-        }
-    }
-
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        debugPrint("[Connect]: - \(peripheral.name!)")
-        if let device = self.matchPeripheral(peripheral) {
-            device.isConnected = true
-            device.peripheral.delegate = self
-            device.peripheral.discoverServices(nil)
-            
-            DispatchQueue.main.async {
-                self.delegate?.didDeviceConnectionUpdate()
-            }
-        }
-    }
-
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        debugPrint("[Disconnect]: - \(peripheral.name!)")
-        if let device = self.matchPeripheral(peripheral) {
-            device.isConnected = false
-            
-            DispatchQueue.main.async {
-                self.delegate?.didDeviceConnectionUpdate()
-            }
-        }
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        guard let services = peripheral.services else { return }
-        guard let device = self.matchPeripheral(peripheral) else { return }
-
-        for service in services {
-            debugPrint("[Service]: - \(service)")
-            let deviceService = Service(uuid: service.uuid.uuidString, service: service)
-            device.services.append(deviceService)
-            
-            /** Characteristics could be specified for faster search */
-//            peripheral.discoverCharacteristics([Alert_Characteristic, Steps_Characteristic], for: service)
-            peripheral.discoverCharacteristics(nil, for: service)
-        }
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard let characteristics = service.characteristics else { return }
-        guard let device = self.matchPeripheral(peripheral) else { return }
-        guard let deviceService = self.matchService(service, for: device) else { return }
-
-        for characteristic in characteristics {
-            debugPrint("[Characteristics]: - \(service)")
-            let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString,
-                                                      characteristic: characteristic)
-            deviceService.characteristic.append(deviceCharacteristic)
-            
-            if characteristic.uuid.uuidString == MiCharacteristicID.steps {
-                /** We can read its value and/or register for notifications,
-                 *  which will be sent every time this value changes.
-                 */
-                peripheral.setNotifyValue(true, for: characteristic)
-//                peripheral.readValue(for: characteristic)
-            }
-        }
-    }
-    
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard let value = characteristic.value else { return }
-        
-        // Characteristic for total steps count
-        if characteristic.uuid.uuidString == MiCharacteristicID.steps {
-            let steps = (value as NSData).bytes.bindMemory(to: Int.self, capacity: characteristic.value!.count).pointee
-            
-            DispatchQueue.main.async {
-                debugPrint("[Steps Count]: - steps \(steps)")
-                self.delegate?.didStepsUpdate(steps: steps)
-            }
         }
     }
     
@@ -193,7 +117,7 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
         // Retrieve the peripheral name from the advertisement data using the "kCBAdvDataLocalName" key
         if let peripheralName = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
             debugPrint("[Peripheral Device]: - \(peripheralName)")
-
+            
             // If device already created we just add new RSSI value and timestamp
             if let existingDevice = self.devices.filter({ $0.name == peripheralName }).first {
                 
@@ -210,6 +134,92 @@ extension BluetoothService: CBCentralManagerDelegate, CBPeripheralDelegate {
             
             DispatchQueue.main.async {
                 self.delegate?.didDeviceUpdate()
+            }
+        }
+    }
+    
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        debugPrint("[Connect]: - \(peripheral.name!)")
+        if let device = self.matchPeripheral(peripheral) {
+            device.isConnected = true
+            device.peripheral.delegate = self
+            
+            /** Best Practice
+                Discover only specific services for better perfomance,
+                or reducing number of services and grouping them in one characteristic */
+            device.peripheral.discoverServices([Alert_Service, Heart_Rate_Service, Mi_Band_Service])
+            
+            DispatchQueue.main.async {
+                self.delegate?.didDeviceConnectionUpdate()
+            }
+        }
+    }
+    
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        debugPrint("[Disconnect]: - \(peripheral.name!)")
+        if let device = self.matchPeripheral(peripheral) {
+            device.isConnected = false
+            
+            DispatchQueue.main.async {
+                self.delegate?.didDeviceConnectionUpdate()
+            }
+        }
+    }
+}
+
+// MARK: - CBPeripheralDelegate
+
+extension BluetoothService: CBPeripheralDelegate {
+    
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        guard let device = self.matchPeripheral(peripheral) else { return }
+        
+        for service in services {
+            debugPrint("[Service]: - \(service)")
+            let deviceService = Service(uuid: service.uuid.uuidString, service: service)
+            device.services.append(deviceService)
+            
+            /** Best Practice
+                Discover only specific characteristic */
+//            peripheral.discoverCharacteristics([Alert_Characteristic, Steps_Characteristic], for: service)
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let characteristics = service.characteristics else { return }
+        guard let device = self.matchPeripheral(peripheral) else { return }
+        guard let deviceService = self.matchService(service, for: device) else { return }
+        
+        for characteristic in characteristics {
+            debugPrint("[Characteristics]: - \(service)")
+            let deviceCharacteristic = Characteristic(uuid: characteristic.uuid.uuidString,
+                                                      characteristic: characteristic)
+            deviceService.characteristic.append(deviceCharacteristic)
+            
+            /** Best Practice
+                Specify which characteristic we's going to read ot notify manually */
+            if characteristic.uuid == Steps_Characteristic {
+                /** We can read its value and/or register for notifications,
+                 which will be sent every time this value changes. */
+                peripheral.setNotifyValue(true, for: characteristic)
+//                peripheral.readValue(for: characteristic)
+            }
+        }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard let value = characteristic.value else { return }
+        
+        if characteristic.uuid == Steps_Characteristic {
+            /** Best Practice
+                Value format for each characteristic might vary */
+            let steps = (value as NSData).bytes.bindMemory(to: Int.self, capacity: characteristic.value!.count).pointee
+            
+            DispatchQueue.main.async {
+                debugPrint("[Steps Count]: - steps \(steps)")
+                self.delegate?.didStepsUpdate(steps: steps)
             }
         }
     }
