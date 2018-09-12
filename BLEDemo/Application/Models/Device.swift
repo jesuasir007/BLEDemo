@@ -41,10 +41,8 @@ class Device: Equatable {
     public func vibrate(level: UInt8) {
         
         // Searching for alert characteristic
-        if let alertCharacteristic = self.services.first(where: { $0.service.uuid == Alert_Service })?.characteristic.first(where: { $0.uuid == MiCharacteristicID.alert }) {
+        if let alertCharacteristic = self.services.first(where: { $0.service.uuid == Alert_Service })?.characteristic.first(where: { $0.characteristic.uuid == Alert_Characteristic }) {
             
-            /** Writing to the device command without responce at higher speed
-             */
             self.peripheral.writeValue(Data(bytes: [level]), for: alertCharacteristic.characteristic, type: .withoutResponse)
         }
     }

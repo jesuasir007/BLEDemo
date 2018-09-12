@@ -37,11 +37,3 @@ struct AlertMode {
     static let mild: UInt8 = 0x1
     static let high: UInt8 = 0x2
 }
-
-enum MiCharacteristicID {
-    static let dateTime = "2A2B"
-    static let alert = "2A06"
-    static let heartRateMeasurement = "2A37"
-    static let heartRateControlPoint = "2A39"
-    static let steps = "FF06"
-}

@@ -49,7 +49,7 @@ extension ServicesViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let characteristic = self.device.services[indexPath.section].characteristic[indexPath.row]
-        if characteristic.uuid == MiCharacteristicID.alert {
+        if characteristic.characteristic.uuid == Alert_Characteristic {
             self.device.vibrate(level: AlertMode.mild)
         }
     }
