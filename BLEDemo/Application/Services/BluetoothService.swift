@@ -29,6 +29,9 @@ class BluetoothService: NSObject {
     // MARK: - Properties
 
     private var centralManager: CBCentralManager!
+    
+    /** Best Practice
+        Store the device peripherals */
     private var devices: [Device] = []
 
     public weak var delegate: BluetoothServiceDelegate?
@@ -83,6 +86,14 @@ class BluetoothService: NSObject {
         guard self.isPowerOn() else { return }
 
         self.centralManager.connect(device.peripheral)
+    }
+    
+    public func disconnect(from device: Device) {
+        guard self.isPowerOn() else { return }
+        
+        /** Best Practice
+            Disconnect when device is no longer needed */
+        self.centralManager.cancelPeripheralConnection(device.peripheral)
     }
 
     // MARK: - Private methods

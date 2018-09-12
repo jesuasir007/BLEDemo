@@ -60,7 +60,7 @@ class AppCoordinator {
 
     /// Showing device details
     private func showDeviceDetailsScreen(_ device: Device) {
-        let deviceDetailsViewController = DeviceDetailsViewController(device: device, bluetoothService: self.bluetoothService)
+        let deviceDetailsViewController = DeviceDetailsViewController(device: device)
         deviceDetailsViewController.delegate = self
         deviceDetailsViewController.title = device.name
         self.navigationController.pushViewController(deviceDetailsViewController, animated: true)

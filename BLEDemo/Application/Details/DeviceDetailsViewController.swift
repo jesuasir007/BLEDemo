@@ -23,13 +23,11 @@ class DeviceDetailsViewController: UITableViewController {
     private let cellsButtonText: [String] = Constants.cellsButtonText
 
     private var chartView: RSSIChartView!
-    private let bluetoothService: BluetoothService
 
     // MARK: - Init
 
-    public init(device: Device, bluetoothService: BluetoothService) {
+    public init(device: Device) {
         self.device = device
-        self.bluetoothService = bluetoothService
         super.init(style: .plain)
     }
     
